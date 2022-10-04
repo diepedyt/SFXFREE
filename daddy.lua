@@ -7,6 +7,25 @@ if not LPH_OBFUSCATED then
     LPH_JIT_MAX = function(...) return (...) end;
 end
 
+local function tw(input, studspersecond, offset)
+    local char = game:GetService("Players").LocalPlayer.Character;
+    local input = input or error("input is nil")
+    local studspersecond = studspersecond or 1000
+    local offset = offset or CFrame.new(0,0,0)
+    local vec3, cframe
+ 
+    if typeof(input) == "table" then
+        vec3 = Vector3.new(unpack(input)); cframe = CFrame.new(unpack(input))
+    elseif typeof(input) ~= "Instance" then
+        return error("wrong format used")
+    end;
+    
+    Time = (char.HumanoidRootPart.Position - (vec3 or input.Position)).magnitude/studspersecond
+    local twn = game.TweenService:Create(char.HumanoidRootPart, TweenInfo.new(Time,Enum.EasingStyle.Linear), {CFrame = (cframe or input.CFrame) * offset})
+    twn:Play()
+    twn.Completed:Wait()
+ end
+
 _G.SendNotification = LPH_NO_VIRTUALIZE(function(title,text)
     OrionLib:MakeNotification({
         Name = tostring(title),
@@ -15,6 +34,69 @@ _G.SendNotification = LPH_NO_VIRTUALIZE(function(title,text)
         Time = 2
     })
 end)
+
+function amCloseToTarget(target)
+    local Self = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+    local target = target
+    local distance = (target - Self).Magnitude
+    
+    local maxDistanceSq = 100^2
+    local t = (target - Self)
+    local distanceSq = t.X^2 + t.Y^2 + t.Z^2
+    if distanceSq > maxDistanceSq then
+        return false
+    else
+        return true
+    end
+end
+
+function getYourDungeon()
+    for i,v in pairs(game:GetService("Workspace"):GetChildren()) do
+        if v:FindFirstChild("VV") and v:FindFirstChild("VV").Value == game.Players.LocalPlayer.Name then
+            return v
+        end
+    end
+end
+
+if not game:GetService("Workspace"):FindFirstChild("a") then
+    local a = Instance.new("Part",game:GetService("Workspace"))
+    a.Size = Vector3.new(10,5,10)
+    a.CFrame = (CFrame.new(-10958.4316, 103.607559, -17797.5742) * CFrame.new(0,20,0)) * CFrame.new(0,-7,0)
+    a.Transparency = 0
+    a.Anchored = true
+    a.Name = "a"
+end
+
+function tpToDungeonEntrance()
+
+    if not amCloseToTarget(game:GetService("Workspace"):FindFirstChild("a").Position) and not getYourDungeon() and not _G.EnteringDungeon then
+        repeat
+            pcall(function()
+                if _G.Settings.Tween then
+                    tw(game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 20,CFrame.new(0,3,0))
+                else
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus.CFrame * CFrame.new(0,3,0)
+                end
+                firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 0)
+                firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 1)
+            end)
+            task.wait(1)
+        until game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and amCloseToTarget(game:GetService("Workspace"):FindFirstChild("a").Position)
+    end
+
+    task.wait(1)
+
+    if amCloseToTarget(game:GetService("Workspace"):FindFirstChild("a").Position) and not getYourDungeon() and not _G.EnteringDungeon then
+        pcall(function()
+            if _G.Settings.Tween then
+                tw({-10958.4316, 103.607559, -17797.5742},10,CFrame.new(0,20,0))
+            else
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742) * CFrame.new(0,20,0)
+            end 
+        end)
+    end
+
+end
 
 
 if not isfolder("SFX") then
@@ -54,7 +136,9 @@ _G.Settings = {
     Delay = 0,
     WebhookLink = "",
     AutoDungeon = false,
-    JoinDelay = 0
+    JoinDelay = 0,
+    Tween = true,
+    TweenSpeed = 150
 }
 
 if readfile and isfile and isfile("SFX/"..game.Players.LocalPlayer.Name.."/Settings.json") then
@@ -85,6 +169,29 @@ Section:AddToggle({
 	Default = _G.Settings.AutoDungeon,
 	Callback = function(newValue)
 		_G.Settings.AutoDungeon = newValue
+        updJS()
+	end    
+})
+
+Section:AddToggle({
+	Name = "Tween Instead Of Teleport",
+	Default = _G.Settings.Tween,
+	Callback = function(newValue)
+		_G.Settings.Tween = newValue
+        updJS()
+	end    
+})
+
+Section:AddSlider({
+	Name = "Tween Speed",
+	Min = 1,
+	Max = 1000,
+	Default = _G.Settings.TweenSpeed,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "",
+	Callback = function(newValue)
+		_G.Settings.TweenSpeed = newValue
         updJS()
 	end    
 })
@@ -307,22 +414,55 @@ end
 function _G.StartDungeon()
     if not _G.Doing then
         pcall(function()
-            if not game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") then
+            if not game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and not amCloseToTarget(game:GetService("Workspace"):FindFirstChild("a").Position) then
+
                 pcall(function()
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742, 0.0791591406, 5.58598927e-08, -0.996861994, 1.24404139e-07, 1, 6.59144561e-08, 0.996861994, -1.29231481e-07, 0.0791591406) * CFrame.new(0,20,0)
+                    game.Players.LocalPlayer.Character.Humanoid:UnequipTools()
+                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.MobSwordNickname))
+                end)
+
+                pcall(function()
+                    if not firetouchinterest then
+                        if _G.Settings.Tween then
+                            tw({-10958.4316, 103.607559, -17797.5742},_G.Settings.TweenSpeed,CFrame.new(0,20,0))
+                        else
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742, 0.0791591406, 5.58598927e-08, -0.996861994, 1.24404139e-07, 1, 6.59144561e-08, 0.996861994, -1.29231481e-07, 0.0791591406) * CFrame.new(0,20,0)
+                        end
+                    else
+                        tpToDungeonEntrance()
+                    end
                 end)
             end
         end)
 
         function brickCheck()
 
-            for i = 1,100 do
-                pcall(function()
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742, 0.0791591406, 5.58598927e-08, -0.996861994, 1.24404139e-07, 1, 6.59144561e-08, 0.996861994, -1.29231481e-07, 0.0791591406) * CFrame.new(0,20,0)
-                end)
-                task.wait(.01)
+
+            pcall(function()
+                game.Players.LocalPlayer.Character.Humanoid:UnequipTools()
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.MobSwordNickname))
+            end)
+
+            if not amCloseToTarget(game:GetService("Workspace"):FindFirstChild("a").Position) then
+
+                for i = 1,1 do
+                    pcall(function()
+                        if not firetouchinterest then
+                            if _G.Settings.Tween then
+                                tw({-10958.4316, 103.607559, -17797.5742},_G.Settings.TweenSpeed,CFrame.new(0,20,0))
+                            else
+                                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742, 0.0791591406, 5.58598927e-08, -0.996861994, 1.24404139e-07, 1, 6.59144561e-08, 0.996861994, -1.29231481e-07, 0.0791591406) * CFrame.new(0,20,0)
+                            end
+                        else
+                            tpToDungeonEntrance()
+                        end
+                    end)
+                    task.wait(.1)
+                end
+                return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
+                
             end
-            return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
+
         end
 
         repeat wait(3) until not brickCheck()
@@ -331,7 +471,12 @@ function _G.StartDungeon()
             task.wait(.1)
             if game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible == false then
                 pcall(function()
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace").Maps["Magma Hills"].DungeonMatchmaking.MatchmakingPad.CFrame * CFrame.new(0,2,0)
+                    if _G.Settings.Tween then
+                        tw(game:GetService("Workspace").Maps["Magma Hills"].DungeonMatchmaking.MatchmakingPad,20,CFrame.new(0,2,0))
+                    else
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace").Maps["Magma Hills"].DungeonMatchmaking.MatchmakingPad.CFrame * CFrame.new(0,2,0)
+                    end
+                    
                 end)
             else
                 break
@@ -361,18 +506,17 @@ function _G.DoDungeon()
         return
     end
 
-    function getYourDungeon()
-        for i,v in pairs(game:GetService("Workspace"):GetChildren()) do
-            if v:FindFirstChild("VV") and v:FindFirstChild("VV").Value == game.Players.LocalPlayer.Name then
-                return v
-            end
-        end
-    end
 
 
     repeat wait(1) warn("waiting for dung") until getYourDungeon()
 
-    task.wait(_G.Settings.JoinDelay)
+    warn("h")
+    
+    if _G.Settings.Tween then
+        task.wait(5)
+    else
+        task.wait(_G.Settings.JoinDelay)
+    end
 
     _G.AutoSwing = true
 
@@ -388,7 +532,11 @@ function _G.DoDungeon()
                     if _G.Settings.Delay ~= 0 then
                         for i = 1,10 do
                             pcall(function()
-                                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = getYourDungeon().Start.Entrance.PlayerWalkTo.CFrame * CFrame.new(0,5,0)
+                                if _G.Settings.Tween then
+                                    tw(getYourDungeon().Start.Entrance.PlayerWalkTo,_G.Settings.TweenSpeed,CFrame.new(0,5,0))
+                                else
+                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = getYourDungeon().Start.Entrance.PlayerWalkTo.CFrame * CFrame.new(0,5,0)
+                                end
                             end)
                             task.wait(0.1)
                         end
@@ -398,7 +546,11 @@ function _G.DoDungeon()
                 pcall(function()
                     repeat 
                         pcall(function()
-                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v:FindFirstChild("HumanoidRootPart").CFrame * CFrame.new(0,0,5)
+                            if _G.Settings.Tween then
+                                tw(v:FindFirstChild("HumanoidRootPart"),_G.Settings.TweenSpeed,CFrame.new(0,0,5))
+                            else
+                                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v:FindFirstChild("HumanoidRootPart").CFrame * CFrame.new(0,0,5)
+                            end
                             task.wait(.05)
                             task.wait(.1)
                         end)
@@ -414,7 +566,11 @@ function _G.DoDungeon()
             for i,v in ipairs(getYourDungeon():GetDescendants()) do
                 if v.Name == "Start" or v.Name == "End" and v:IsA("Part") then
                     pcall(function()
-                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.CFrame * CFrame.new(0,2,0)
+                        if _G.Settings.Tween then
+                            tw(v,_G.Settings.TweenSpeed,CFrame.new(0,2,0))
+                        else
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.CFrame * CFrame.new(0,2,0)
+                        end
                         task.wait(0.1)
                     end)
                 end
@@ -428,7 +584,11 @@ function _G.DoDungeon()
             killAllMobs()
             pcall(function()
                 task.wait(1)
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = (getYourDungeon().EndModule.Start.CFrame * CFrame.new(0,0,math.random(10,20))) * CFrame.new(0,10,0)
+                if _G.Settings.Tween then
+                    tw(getYourDungeon().EndModule.Start,_G.Settings.TweenSpeed,CFrame.new(0,0,math.random(10,20)) * CFrame.new(0,10,0))
+                else
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = (getYourDungeon().EndModule.Start.CFrame * CFrame.new(0,0,math.random(10,20))) * CFrame.new(0,10,0)
+                end
             end)
         until game:GetService("Workspace").Mobs:FindFirstChild("The Abomination")
         killAllMobs()
@@ -450,7 +610,11 @@ function _G.DoDungeon()
                                     game.Players.LocalPlayer.Character.Humanoid:UnequipTools()
                                     game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.ChestSwordNickname))
                                     task.wait(.1)
-                                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Chest_Lid.Frame.Lock.CFrame * CFrame.new(1,0,0)
+                                    if _G.Settings.Tween then
+                                        tw(v.Chest_Lid.Frame.Lock,_G.Settings.TweenSpeed,CFrame.new(1,0,0))
+                                    else
+                                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Chest_Lid.Frame.Lock.CFrame * CFrame.new(1,0,0)
+                                    end
                                 end)
                             task.wait(.4)
                         until v:FindFirstChild("Lock") or attempt >= 5
@@ -597,3 +761,5 @@ task.spawn(function()
         end
     end
 end)
+
+
