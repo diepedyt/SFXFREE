@@ -481,7 +481,7 @@ function _G.StartDungeon()
 
         end
 
-        repeat wait(3) until not brickCheck()
+        repeat wait(3) until not pcall(function() brickCheck() end)
         _G.EnteringDungeon = true
         repeat 
             task.wait(.1)
