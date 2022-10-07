@@ -476,10 +476,10 @@ function _G.StartDungeon()
                     task.wait(.1)
                 end
                 return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
-                
+               
+            else
+                return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
             end
-
-            return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
 
         end
 
