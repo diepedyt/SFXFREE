@@ -459,7 +459,7 @@ function _G.StartDungeon()
                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.MobSwordNickname))
             end)
 
-            if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 100 then
+            if not getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 500 then
 
                 for i = 1,1 do
                     pcall(function()
@@ -475,9 +475,6 @@ function _G.StartDungeon()
                     end)
                     task.wait(.1)
                 end
-                return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
-               
-            else
                 return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
             end
 
