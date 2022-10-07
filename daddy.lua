@@ -459,7 +459,7 @@ function _G.StartDungeon()
                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.MobSwordNickname))
             end)
 
-            if not getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 500 then
+            if not (getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 500) then
 
                 for i = 1,1 do
                     pcall(function()
