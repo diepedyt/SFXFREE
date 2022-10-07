@@ -479,6 +479,8 @@ function _G.StartDungeon()
                 
             end
 
+            return game:GetService("Workspace").Maps["Magma Hills"].FortressDoor.Brick.BillboardGui.Counter.Visible
+
         end
 
         repeat wait(3) until not pcall(function() brickCheck() end)
