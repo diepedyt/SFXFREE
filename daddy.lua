@@ -7,17 +7,12 @@ if not LPH_OBFUSCATED then
     LPH_JIT_MAX = function(...) return (...) end;
 end
 
-local function tw(input, studspersecond, offset)
+local function tw(input, studspersecond, offset, bypass)
 
-
-
-        if _G.GoingToPad == true and input.Name ~= "MatchmakingPad" then
-            return
-        end
 
         local distanceInStuds = 0
 
-        if game.Players.LocalPlayer.Character and input then
+        if game.Players.LocalPlayer.Character and input and bypass then
             pcall(function()
                 distanceInStuds = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - input.Position).Magnitude
             end)
@@ -81,32 +76,36 @@ end
 
 function tpToDungeonEntrance()
 
-    if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 100 and not getYourDungeon() and not _G.EnteringDungeon then
-        repeat
+    if not getYourDungeon() then
+
+        if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 100 and not getYourDungeon() and not _G.EnteringDungeon then
+            repeat
+                pcall(function()
+                    if _G.Settings.Tween and not firetouchinterest then
+                        tw(game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 20,CFrame.new(0,20,0))
+                        task.wait(1)
+                    elseif not firetouchinterest then
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus.CFrame * CFrame.new(0,13,0)
+                    end
+                    firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 0)
+                    firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 1)
+                end)
+                task.wait(1)
+            until game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100
+        end
+
+        task.wait(1)
+
+        if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100 and not getYourDungeon() and not _G.EnteringDungeon then
             pcall(function()
                 if _G.Settings.Tween then
-                    tw(game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 20,CFrame.new(0,13,0))
-                    task.wait(1)
+                    tw({-10958.4316, 103.607559, -17797.5742},10,CFrame.new(0,20,0))
                 else
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus.CFrame * CFrame.new(0,3,0)
-                end
-                firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 0)
-                firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 1)
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742) * CFrame.new(0,20,0)
+                end 
             end)
-            task.wait(1)
-        until game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100
-    end
+        end
 
-    task.wait(1)
-
-    if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100 and not getYourDungeon() and not _G.EnteringDungeon then
-        pcall(function()
-            if _G.Settings.Tween then
-                tw({-10958.4316, 103.607559, -17797.5742},10,CFrame.new(0,20,0))
-            else
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-10958.4316, 103.607559, -17797.5742) * CFrame.new(0,20,0)
-            end 
-        end)
     end
 
 end
@@ -496,6 +495,9 @@ function _G.StartDungeon()
                     
                 end)
             else
+                if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 300 and getStudLength(game:GetService("Workspace").Maps["Magma Hills"].DungeonMatchmaking.MatchmakingPad) < 20 then
+                    tw({-10958.4316, 103.607559, -17797.5742},10,CFrame.new(0,20,0),true)
+                end
                 break
             end
         until _G.EnteringDungeon == false
@@ -674,7 +676,9 @@ function _G.DoDungeon()
         end
     end
 
-    killAllMobs()
+    for i = 1,4 do
+        killAllMobs()
+    end
     killBoss()
     getAllChests()
 
@@ -811,5 +815,3 @@ task.spawn(function()
         end
     end
 end)
-
-
