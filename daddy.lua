@@ -7,12 +7,19 @@ if not LPH_OBFUSCATED then
     LPH_JIT_MAX = function(...) return (...) end;
 end
 
+function getStudLength(target)
+    if game.Players.LocalPlayer.Character and target then
+        distanceInStuds = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - target.Position).Magnitude
+    end
+    return distanceInStuds
+end
+
 local function tw(input, studspersecond, offset, bypass)
 
 
         local distanceInStuds = 0
 
-        if game.Players.LocalPlayer.Character and input and bypass then
+        if game.Players.LocalPlayer.Character and input and not bypass then
             pcall(function()
                 distanceInStuds = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - input.Position).Magnitude
             end)
@@ -37,8 +44,10 @@ local function tw(input, studspersecond, offset, bypass)
     
     Time = (char.HumanoidRootPart.Position - (vec3 or input.Position)).magnitude/studspersecond
     local twn = game.TweenService:Create(char.HumanoidRootPart, TweenInfo.new(Time,Enum.EasingStyle.Linear), {CFrame = (cframe or input.CFrame) * offset})
+    --pcall(function() repeat game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = true until game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored == true end)
     twn:Play()
     twn.Completed:Wait()
+    --pcall(function() repeat game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = false until game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored == false end)
  end
 
 _G.SendNotification = LPH_NO_VIRTUALIZE(function(title,text)
@@ -50,12 +59,6 @@ _G.SendNotification = LPH_NO_VIRTUALIZE(function(title,text)
     })
 end)
 
-function getStudLength(target)
-    if game.Players.LocalPlayer.Character and target then
-        distanceInStuds = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - target.Position).Magnitude
-    end
-    return distanceInStuds
-end
 
 function getYourDungeon()
     for i,v in pairs(game:GetService("Workspace"):GetChildren()) do
@@ -128,6 +131,32 @@ function updateTotalGem()
             writefile("SFX/"..game.Players.LocalPlayer.Name.."/TotalGems.json",d)
         end
     end)
+end
+
+function updateTotalArtifacts()
+
+    local artifacts = {}
+
+    pcall(function()
+
+
+        for i,v in ipairs(game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder:GetChildren()) do
+            if v:FindFirstChild("Amount") then  
+                table.insert(artifacts,v.Amount.Text:split("x")[2])
+            end
+        end
+        
+    end)
+
+    pcall(function()
+        local j
+        local HS = game:GetService("HttpService")
+        if writefile then
+            d = HS:JSONEncode(artifacts)
+            writefile("SFX/"..game.Players.LocalPlayer.Name.."/TotalArtifacts.json",d)
+        end
+    end)
+
 end
 
 
@@ -261,6 +290,7 @@ Section:AddSlider({
 task.spawn(function()
     task.wait(3)
     pcall(function() updateTotalGem() end)
+    pcall(function() updateTotalArtifacts() end)
 end)
 
 local Section = Tab:AddSection({
@@ -459,7 +489,7 @@ function _G.StartDungeon()
                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(_G.GetSword(_G.Settings.MobSwordNickname))
             end)
 
-            if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 100 then
+            if getStudLength(game:GetService("Workspace"):FindFirstChild("a")) > 100 and getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 250 then
 
                 for i = 1,1 do
                     pcall(function()
@@ -475,6 +505,10 @@ function _G.StartDungeon()
                     end)
                     task.wait(.1)
                 end
+
+            else
+
+                tpToDungeonEntrance()
                 
             end
 
@@ -694,7 +728,7 @@ function _G.DoDungeon()
 
 end
 
-_G.WebHook = LPH_JIT_MAX(function(oldGems,newGems)
+_G.WebHook = LPH_JIT_MAX(function(oldGems,newGems,oldLegArt,newLegArt,oldImpArt,newImpArt)
 	pcall(function()
 		local url = tostring(_G.Settings.WebHookLink)
 		if url == "" then return end
@@ -711,6 +745,8 @@ _G.WebHook = LPH_JIT_MAX(function(oldGems,newGems)
         end
 
         local totalGem = "Error!"
+        local totalLegArt = "Error!"
+        local totalImpArt = "Error!"
 
 
         local a = listfiles("SFX")
@@ -719,11 +755,17 @@ _G.WebHook = LPH_JIT_MAX(function(oldGems,newGems)
             
             local player = v:split("\\")[2]
 
-            local playerGem = "0"
+            local playerGem = 0
+            local playerArtifacts = {"0","0","0","0","0"}
 
             local HS = game:GetService("HttpService")
             if readfile and isfile and isfile("SFX/"..player.."/TotalGems.json") then
                 playerGem = HS:JSONDecode(readfile("SFX/"..player.."/TotalGems.json"))
+            end
+
+            local HS = game:GetService("HttpService")
+            if readfile and isfile and isfile("SFX/"..player.."/TotalArtifacts.json") then
+                playerArtifacts = HS:JSONDecode(readfile("SFX/"..player.."/TotalArtifacts.json"))
             end
 
             if totalGem == "Error!" then
@@ -732,10 +774,24 @@ _G.WebHook = LPH_JIT_MAX(function(oldGems,newGems)
                 totalGem += playerGem
             end
 
+            if totalLegArt == "Error!" then
+                totalLegArt = tonumber(playerArtifacts[4])
+            else
+                totalLegArt += tonumber(playerArtifacts[4])
+            end
+
+            if totalImpArt == "Error!" then
+                totalImpArt = tonumber(playerArtifacts[5])
+            else
+                totalImpArt += tonumber(playerArtifacts[5])
+            end
+
         end
 
 
         local profitGem = newGems - oldGems
+        local profitLegArt = newLegArt - oldLegArt
+        local profitImpArt = newImpArt - oldImpArt
 
         local data = {
             ["username"]= " abc ",
@@ -744,7 +800,7 @@ _G.WebHook = LPH_JIT_MAX(function(oldGems,newGems)
             ["embeds"]= {
               {
                 ["color"]= 0,
-                ["description"]= "~ **Hello Baby Girl - ||"..game.Players.LocalPlayer.Name.."||**\n\n~ **Here Are Your Stats ;) - ||"..game.Players.LocalPlayer.Name.."||**\n\n- Gem Gain: ** "..comma_value(profitGem).."+ **\n- Total Gems: ** "..comma_value(newGems).." **\n- Total Gems On All Accounts: ** "..comma_value(totalGem).." **\n-\n\n~ **Have Sex With Me Later OwO~ - ||"..game.Players.LocalPlayer.Name.."||**\n\n",
+                ["description"]= "~ **Hello Baby Girl - ||"..game.Players.LocalPlayer.Name.."||**\n\n~ **Here Are Your Stats ;) - ||"..game.Players.LocalPlayer.Name.."||**\n\n- Gem Gain: ** "..comma_value(profitGem).."+**\n- Legendary Artifact Gain: ** "..comma_value(profitLegArt).."+**\n- Impossible Artifact Gain: **"..comma_value(profitImpArt).."+ **\n\n- Total Leg Artifacts On All Accounts: ** "..comma_value(totalLegArt).."**\n- Total Imp Artifacts On All Accounts: ** "..comma_value(totalImpArt).." **\n- Total Gems On All Accounts: ** "..comma_value(totalGem).." **\n\n\n~ **Have Sex With Me Later OwO~ - ||"..game.Players.LocalPlayer.Name.."||**\n\n",
                 ["timestamp"]= "",
                 ["author"]= {
                   ["name"]= "I'm So Sexy, Marry Me!",
@@ -788,10 +844,14 @@ task.spawn(function()
         while task.wait(1) do
             repeat wait(1) until _G.Doing
             local oldGems = game:GetService("Players").LocalPlayer.PlayerGui.MainGui.TopHolder.Gems.Price.Text:gsub(",","")
+            local oldLegArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Legendary.Amount.Text:split("x")[2]
+            local oldImpArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Impossible.Amount.Text:split("x")[2]
             repeat wait(1) until not _G.Doing
             local newGems = game:GetService("Players").LocalPlayer.PlayerGui.MainGui.TopHolder.Gems.Price.Text:gsub(",","")
+            local newLegArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Legendary.Amount.Text:split("x")[2]
+            local newImpArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Impossible.Amount.Text:split("x")[2]
             pcall(function() updateTotalGem() end)
-            pcall(function() _G.WebHook(tonumber(oldGems),tonumber(newGems)) end)
+            pcall(function() _G.WebHook(tonumber(oldGems),tonumber(newGems),tonumber(oldLegArt),tonumber(newLegArt),tonumber(oldImpArt),tonumber(newImpArt)) end)
         end
     end
 end)
