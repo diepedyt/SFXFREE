@@ -94,7 +94,7 @@ function tpToDungeonEntrance()
                     firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, game:GetService("Workspace")[game.Players.LocalPlayer.Name.."'s Base"].DungeonTP.Focus, 1)
                 end)
                 task.wait(1)
-            until game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100
+            until game:GetService("Workspace").Maps:FindFirstChild("Magma Hills") and game:GetService("Workspace").Maps["Magma Hills"].FortressDoor:FindFirstChild("Brick") and getStudLength(game:GetService("Workspace"):FindFirstChild("a")) < 100
         end
 
         task.wait(1)
@@ -426,7 +426,6 @@ for i = 1, #types do
                             
 
                             if getswordworth(types[i],(v.Note.Text:split(types[i]..": ")[2]:split(" |")[1])) == getswordworth(types[i],(_G.Best[types[i]]:split(types[i]..": ")[2]:split(" |")[1])) then
-                                print("2")
                                 local button = v:FindFirstChild("Buy"):FindFirstChild("TextButton")
                                 local events = {"MouseButton1Click", "MouseButton1Down", "Activated"}
                                 for i,v in pairs(events) do
@@ -851,6 +850,7 @@ task.spawn(function()
             local newLegArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Legendary.Amount.Text:split("x")[2]
             local newImpArt = game:GetService("Players")[game.Players.LocalPlayer.Name].PlayerGui.MainGui.ArtifactMenu.Holder.Impossible.Amount.Text:split("x")[2]
             pcall(function() updateTotalGem() end)
+            pcall(function() updateTotalArtifacts() end)
             pcall(function() _G.WebHook(tonumber(oldGems),tonumber(newGems),tonumber(oldLegArt),tonumber(newLegArt),tonumber(oldImpArt),tonumber(newImpArt)) end)
         end
     end
